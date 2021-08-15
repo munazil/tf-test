@@ -1,6 +1,7 @@
 package com.tecforte.blog.web.rest;
 
 import com.tecforte.blog.service.BlogService;
+import com.tecforte.blog.service.EntryService;
 import com.tecforte.blog.web.rest.errors.BadRequestAlertException;
 import com.tecforte.blog.service.dto.BlogDTO;
 
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.net.URI;
 import java.net.URISyntaxException;
-
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,9 +35,12 @@ public class BlogResource {
     private String applicationName;
 
     private final BlogService blogService;
+    
+    private final EntryService entryService;
 
-    public BlogResource(BlogService blogService) {
+    public BlogResource(BlogService blogService, EntryService entryService) {
         this.blogService = blogService;
+        this.entryService = entryService;
     }
 
     /**
@@ -115,5 +119,39 @@ public class BlogResource {
         log.debug("REST request to delete Blog : {}", id);
         blogService.delete(id);
         return ResponseEntity.noContent().headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id.toString())).build();
+    }
+    
+    /**
+     * {@code DELETE  /blogs/clean} : delete the entry.
+     *
+     * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
+     */
+    @DeleteMapping("/blogs/clean")
+    public ResponseEntity<Void> cleanBlogs() {
+    	String str1 = "rubbish";
+    	String str2 = "hell";
+        log.debug("REST request to delete Entry : {}", str1, str2);
+        entryService.deleteByTitleLikeOrContentLike(str1, str2);
+        return ResponseEntity.noContent().headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, (str1 + " " + str2))).build();
+    }
+    
+    /**
+     * {@code DELETE  /blogs/:id/clean} : delete the entry.
+     *
+     * @param id the id of the blogDTO to delete.
+     * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
+     */
+    @DeleteMapping("/blogs/{id}/clean")
+    public ResponseEntity<Void> cleanBlogsById(@PathVariable Long id) {
+    	List<String> list=new ArrayList<String>();  
+    	 list.add("rude");  
+    	 list.add("lol");  
+    	 list.add("rolf");    
+    	 
+    	for(int i=0; i<list.size();i++) {
+    		log.debug("REST request to delete Entry : {}", list.get(i));
+    		entryService.deleteByIdWithTitleLikeOrContentLike(id, list.get(i));    		
+    	}    	 
+        return ResponseEntity.noContent().headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, list.toString())).build();
     }
 }

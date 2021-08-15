@@ -1,7 +1,10 @@
 package com.tecforte.blog.web.rest;
 
+import com.tecforte.blog.domain.enumeration.Emoji;
+import com.tecforte.blog.service.BlogService;
 import com.tecforte.blog.service.EntryService;
 import com.tecforte.blog.web.rest.errors.BadRequestAlertException;
+import com.tecforte.blog.service.dto.BlogDTO;
 import com.tecforte.blog.service.dto.EntryDTO;
 
 import io.github.jhipster.web.util.HeaderUtil;
@@ -40,9 +43,12 @@ public class EntryResource {
     private String applicationName;
 
     private final EntryService entryService;
+    
+    private final BlogService blogService;
 
-    public EntryResource(EntryService entryService) {
+    public EntryResource(EntryService entryService, BlogService blogService) {
         this.entryService = entryService;
+        this.blogService = blogService;
     }
 
     /**
@@ -58,11 +64,57 @@ public class EntryResource {
         if (entryDTO.getId() != null) {
             throw new BadRequestAlertException("A new entry cannot already have an ID", ENTITY_NAME, "idexists");
         }
+//	Author: Munazil *starts here*
+        // validate emoji 
+        Optional<BlogDTO> blogDTO = blogService.findOne(entryDTO.getBlogId());
+        boolean isPositive = blogDTO.get().isPositive();
+        if (isPositive) {
+        	if(entryDTO.getEmoji().equals(Emoji.SAD) || entryDTO.getEmoji().equals(Emoji.ANGRY))
+        		throw new BadRequestAlertException("Invalid Emoji", ENTITY_NAME, "invalidEmoji");
+        	if(!isContentPositive(entryDTO.getContent(), isPositive))
+        		throw new BadRequestAlertException("Invalid Content", ENTITY_NAME, "invalidContent");
+        }
+        if (!isPositive) {
+        	if(entryDTO.getEmoji().equals(Emoji.HAHA) || entryDTO.getEmoji().equals(Emoji.LIKE))
+        		throw new BadRequestAlertException("Invalid Emoji", ENTITY_NAME, "invalidEmoji");
+        	if(isContentPositive(entryDTO.getContent(), isPositive))
+        		throw new BadRequestAlertException("Invalid Content", ENTITY_NAME, "invalidContent");
+        }        
+//	*ends here*
         EntryDTO result = entryService.save(entryDTO);
         return ResponseEntity.created(new URI("/api/entries/" + result.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(applicationName, false, ENTITY_NAME, result.getId().toString()))
             .body(result);
     }
+    
+//	Author: Munazil *starts here*    
+    private boolean isContentPositive(String content, boolean isPositive) {
+    	boolean isCP = true;
+    	boolean isNeutral = true;
+    	content = content.toLowerCase();
+    	
+    	if(content.contains("happy") || content.contains("trust") || content.contains("love")) {
+    		isCP = true;
+    		isNeutral = false;    		
+    	}
+    	if(content.contains("fear") || content.contains("sad") || content.contains("lonely")) {
+    		isCP = false;
+    		isNeutral = false;
+    	}
+    	if(isNeutral) {
+    		if(isPositive)
+    			isCP = true;
+    		else
+    			isCP = false;    			
+    	}
+    	else {
+    		if(content.contains("dis") || content.contains("un") || content.contains("less"))
+    			isCP = !isCP;    		
+    	}
+    	
+    	return isCP;
+    }
+//	*ends here*
 
     /**
      * {@code PUT  /entries} : Updates an existing entry.
@@ -126,4 +178,6 @@ public class EntryResource {
         entryService.delete(id);
         return ResponseEntity.noContent().headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id.toString())).build();
     }
+    
+    
 }

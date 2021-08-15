@@ -81,4 +81,24 @@ public class EntryService {
         log.debug("Request to delete Entry : {}", id);
         entryRepository.deleteById(id);
     }
+    
+    /**
+     * Delete the entry by title.
+     *
+     * @param title the title of the entity.
+     */
+    public void deleteByTitleLikeOrContentLike(String title, String content) {
+        log.debug("Request to delete Entry : {}", title, content);
+        entryRepository.deleteByTitleLikeOrContentLike(title, content);
+    }
+    
+    /**
+     * Delete the entry by id where title or content.
+     *
+     * @param title the title of the entity.
+     */
+    public void deleteByIdWithTitleLikeOrContentLike(Long id, String str1) {
+        log.debug("Request to delete Entry : {}", id, str1);
+        entryRepository.deleteByBlogIdWithTitleLikeOrContentLike(id, str1);
+    }
 }
